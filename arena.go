@@ -8,9 +8,9 @@ import (
 	"unsafe"
 )
 
-// A parse arena keeps all slices and scalar interface boxes for ordinary
-// documents in one independently owned heap object. Oversized inputs fall back
-// to regular growing slices without changing the public representation.
+// A parse arena keeps slices and scalar interface boxes in a small number of
+// independently owned heap objects. Common document sizes use fixed arenas;
+// larger inputs use capacities scaled from their source size.
 type valueArena struct {
 	pairs      [64]Pair
 	values     [64]any

@@ -189,6 +189,25 @@ func TestParseAnchorsAliasesAndMergeKeys(t *testing.T) {
 	assertValue(t, parseOK(t, anchoredMerge, 0), pairs("mergekeyrefdef", pairs("a", "foo", "b", "bar", "c", "baz"), "mergekeyderef", pairs("d", "quux", "b", "bar", "c", "baz")))
 }
 
+func TestValueArenaGrowsReferenceStorage(t *testing.T) {
+	arena := newValueArena(16_001)
+	const referenceCount = 1_025
+
+	for i := range referenceCount {
+		arena.setReference(fmt.Sprintf("anchor%d", i), i)
+	}
+
+	for _, index := range []int{0, referenceCount - 1} {
+		value, ok := arena.reference(fmt.Sprintf("anchor%d", index))
+		if !ok {
+			t.Fatalf("anchor%d was not retained", index)
+		}
+		if value != index {
+			t.Fatalf("anchor%d = %#v; want %d", index, value, index)
+		}
+	}
+}
+
 func TestParseAliasesFollowedByComments(t *testing.T) {
 	input := "var: &var var-value\nscalar: *var # comment\nlist:\n  - *var # comment\nmap: { key: *var, # comment\n  other: plain }"
 	want := pairs("var", "var-value", "scalar", "var-value", "list", sequence("var-value"), "map", pairs("key", "var-value", "other", "plain"))

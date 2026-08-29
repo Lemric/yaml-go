@@ -139,6 +139,11 @@ func BenchmarkParseLargeNestedDocument(b *testing.B) {
 	document := buildNestedBenchmarkDocument(1_000)
 	b.SetBytes(int64(len(document)))
 	b.ReportAllocs()
+	value, err := Parse(document, ParseRejectAliases)
+	if err != nil {
+		b.Fatal(err)
+	}
+	benchmarkValue = value
 	b.ResetTimer()
 	for range b.N {
 		value, err := Parse(document, ParseRejectAliases)
