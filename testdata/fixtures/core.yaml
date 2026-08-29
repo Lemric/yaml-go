@@ -1,0 +1,96 @@
+--- %YAML:1.0
+test: Multiple quoted string on one line
+brief: >
+    Multiple quoted string on one line
+yaml: |
+    stripped_title: { name: "foo bar", help: "bar foo" }
+---
+test: Empty sequence
+yaml: |
+    foo: [ ]
+---
+test: Empty value
+yaml: |
+    foo:
+---
+test: Inline string parsing
+brief: >
+    Inline string parsing
+yaml: |
+    test: ['complex: string', 'another [string]']
+---
+test: Boolean
+brief: >
+    Boolean
+yaml: |
+    - false
+    - true
+    - null
+    - ~
+    - 'false'
+    - 'true'
+    - 'null'
+    - '~'
+---
+test: Empty lines in literal blocks
+brief: >
+  Empty lines in literal blocks
+yaml: |
+  foo:
+    bar: |
+      foo
+
+
+        
+      bar
+---
+test: Empty lines in folded blocks
+brief: >
+  Empty lines in folded blocks
+yaml: |
+  foo:
+    bar: >
+
+      foo
+
+      
+      bar
+---
+test: IP addresses
+brief: >
+  IP addresses
+yaml: |
+  foo: 10.0.0.2
+---
+test: A sequence with an embedded mapping
+brief: >
+  A sequence with an embedded mapping
+yaml: |
+  - foo
+  - bar: { bar: foo }
+---
+test: Octal strings
+brief: Octal notation in a string must remain a string
+yaml: |
+  foo: "0123"
+---
+test: Octal strings
+brief: Octal notation in a string must remain a string
+yaml: |
+  foo: '0123'
+---
+test: Octal strings
+brief: Octal notation in a string must remain a string
+yaml: |
+  foo: |
+    0123
+---
+test: Document as a simple hash
+brief: Document as a simple hash
+yaml: |
+  { foo: bar }
+---
+test: Document as a simple array
+brief: Document as a simple array
+yaml: |
+  [ foo, bar ]

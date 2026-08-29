@@ -1,0 +1,103 @@
+test: outside double quotes
+yaml: |
+    \0 \ \a \b \n
+---
+test: 'null'
+yaml: |
+    "\0"
+---
+test: bell
+yaml: |
+    "\a"
+---
+test: backspace
+yaml: |
+    "\b"
+---
+test: horizontal tab (1)
+yaml: |
+    "\t"
+---
+test: horizontal tab (2)
+yaml: |
+    "\	"
+---
+test: line feed
+yaml: |
+    "\n"
+---
+test: vertical tab
+yaml: |
+    "\v"
+---
+test: form feed
+yaml: |
+    "\f"
+---
+test: carriage return
+yaml: |
+    "\r"
+---
+test: escape
+yaml: |
+    "\e"
+---
+test: space
+yaml: |
+    "\ "
+---
+test: slash
+yaml: |
+    "\/"
+---
+test: backslash
+yaml: |
+    "\\"
+---
+test: Unicode next line
+yaml: |
+    "\N"
+---
+test: Unicode non-breaking space
+yaml: |
+    "\_"
+---
+test: Unicode line separator
+yaml: |
+    "\L"
+---
+test: Unicode paragraph separator
+yaml: |
+    "\P"
+---
+test: Escaped 8-bit Unicode
+yaml: |
+    "\x42"
+---
+test: Escaped 16-bit Unicode
+yaml: |
+    "\u20ac"
+---
+test: Escaped 32-bit Unicode
+yaml: |
+    "\U00000043"
+---
+test: Example 5.13 Escaped Characters
+note: |
+    Currently throws an error parsing first line. This case remains intentionally disabled because
+    continuation of string across multiple lines? Keeping test here but disabled.
+todo: true
+yaml: |
+    "Fun with \\
+    \" \a \b \e \f \
+    \n \r \t \v \0 \
+    \  \_ \N \L \P \
+    \x41 \u0041 \U00000041"
+---
+test: Double quotes with a line feed
+yaml: |
+   { double: "some value\n \"some quoted string\" and 'some single quotes one'" }
+---
+test: Backslashes
+yaml: |
+    { single: 'foo\Var', no-quotes: foo\Var, double: "foo\\Var" }
