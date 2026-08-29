@@ -1,6 +1,7 @@
 package yaml
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -50,7 +51,8 @@ func ParseFileWithLimits(path string, flags Flags, limits Limits) (any, error) {
 		return nil, fmt.Errorf("file %q cannot be read: %w", path, err)
 	}
 	v, err := ParseWithLimits(string(b), flags, limits)
-	if pe, ok := err.(*ParseError); ok {
+	var pe *ParseError
+	if errors.As(err, &pe) {
 		pe.Filename = path
 	}
 	return v, err
@@ -702,7 +704,8 @@ func (p *blockParser) parseKey(text string, line int) (any, error) {
 		v, err = parseArenaScalar(text, p.flags, p.arena)
 	}
 	if err != nil {
-		if pe, ok := err.(*ParseError); ok {
+		var pe *ParseError
+		if errors.As(err, &pe) {
 			pe.Line = line
 		}
 		return nil, err

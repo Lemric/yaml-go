@@ -171,7 +171,7 @@ type emptyInterface struct{ typ, data unsafe.Pointer }
 
 var (
 	stringInterfaceType   = interfaceType("")
-	intInterfaceType      = interfaceType(int(0))
+	intInterfaceType      = interfaceType(0)
 	int64InterfaceType    = interfaceType(int64(0))
 	floatInterfaceType    = interfaceType(float64(0))
 	boolInterfaceType     = interfaceType(false)
@@ -200,10 +200,39 @@ func newValueArena(size int) *valueArena {
 	case size <= 5001:
 		a := new(valueArena5K)
 		return a.arena.use(a.pairs[:], a.values[:], a.boxes[:], a.lines[:], a.refs[:], a.active[:], a.slots[:])
-	default:
+	case size <= 10_001:
 		a := new(valueArena10K)
 		return a.arena.use(a.pairs[:], a.values[:], a.boxes[:], a.lines[:], a.refs[:], a.active[:], a.slots[:])
+	default:
+		return newLargeValueArena(size)
 	}
+}
+
+func newLargeValueArena(size int) *valueArena {
+	a := new(valueArena)
+	pairs := make([]Pair, scaledArenaCapacity(size, len(valueArena10K{}.pairs)))
+	values := make([]any, scaledArenaCapacity(size, len(valueArena10K{}.values)))
+	boxes := make([]scalarBox, scaledArenaCapacity(size, len(valueArena10K{}.boxes)))
+	lines := make([]sourceLine, size+1)
+	refs := make([]arenaReference, size)
+	active := make([]string, len(valueArena10K{}.active))
+	slots := make([]mappingSlot, largeArenaSlotCapacity(size))
+	return a.use(pairs, values, boxes, lines, refs, active, slots)
+}
+
+func scaledArenaCapacity(size, capacityAt10K int) int {
+	const baseline = 10_000
+	whole := size / baseline
+	remainder := size % baseline
+	return whole*capacityAt10K + (remainder*capacityAt10K+baseline-1)/baseline
+}
+
+func largeArenaSlotCapacity(size int) int {
+	capacity := 128
+	for capacity < size*2 {
+		capacity <<= 1
+	}
+	return capacity
 }
 
 func (a *valueArena) use(pairs []Pair, values []any, boxes []scalarBox, lines []sourceLine, refs []arenaReference, active []string, slots []mappingSlot) *valueArena {

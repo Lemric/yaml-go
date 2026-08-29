@@ -88,7 +88,7 @@ func Lint(files []string, options LintOptions) (LintResult, error) {
 	case LintFormatGitHub:
 		var b strings.Builder
 		for _, x := range issues {
-			fmt.Fprintf(&b, "::error file=%s,line=%d,col=0::%s\n", x.Path, x.Line, x.Message)
+			_, _ = fmt.Fprintf(&b, "::error file=%s,line=%d,col=0::%s\n", x.Path, x.Line, x.Message)
 		}
 		result.Output = b.String()
 	case LintFormatGitLab:
@@ -119,14 +119,14 @@ func Lint(files []string, options LintOptions) (LintResult, error) {
 	default:
 		var b strings.Builder
 		for _, x := range issues {
-			fmt.Fprintf(&b, "ERROR in %s: %s\n", x.Path, x.Message)
+			_, _ = fmt.Fprintf(&b, "ERROR in %s: %s\n", x.Path, x.Message)
 		}
 		if options.Verbose {
 			for _, p := range valid {
-				fmt.Fprintf(&b, "OK in %s\n", p)
+				_, _ = fmt.Fprintf(&b, "OK in %s\n", p)
 			}
 			if len(issues) == 0 {
-				fmt.Fprintf(&b, "All %d YAML files contain valid syntax\n", len(valid))
+				_, _ = fmt.Fprintf(&b, "All %d YAML files contain valid syntax\n", len(valid))
 			}
 		}
 		result.Output = b.String()
