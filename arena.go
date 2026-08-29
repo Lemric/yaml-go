@@ -69,6 +69,20 @@ type valueArena10K struct {
 	slots  [32_768]mappingSlot
 }
 
+// valueArena16K covers large, deeply nested configuration documents in one
+// GC-visible allocation. The capacities reflect node density rather than only
+// line count: nested mappings need more pairs and boxes than flat mappings.
+type valueArena16K struct {
+	arena  valueArena
+	pairs  [20_000]Pair
+	values [6_500]any
+	boxes  [40_000]scalarBox
+	lines  [16_002]sourceLine
+	refs   [1024]arenaReference
+	active [128]string
+	slots  [32_768]mappingSlot
+}
+
 type arenaReference struct {
 	name  string
 	value any
@@ -203,6 +217,9 @@ func newValueArena(size int) *valueArena {
 	case size <= 10_001:
 		a := new(valueArena10K)
 		return a.arena.use(a.pairs[:], a.values[:], a.boxes[:], a.lines[:], a.refs[:], a.active[:], a.slots[:])
+	case size <= 16_001:
+		a := new(valueArena16K)
+		return a.arena.use(a.pairs[:], a.values[:], a.boxes[:], a.lines[:], a.refs[:], a.active[:], a.slots[:])
 	default:
 		return newLargeValueArena(size)
 	}
@@ -210,21 +227,23 @@ func newValueArena(size int) *valueArena {
 
 func newLargeValueArena(size int) *valueArena {
 	a := new(valueArena)
-	pairs := make([]Pair, scaledArenaCapacity(size, len(valueArena10K{}.pairs)))
-	values := make([]any, scaledArenaCapacity(size, len(valueArena10K{}.values)))
-	boxes := make([]scalarBox, scaledArenaCapacity(size, len(valueArena10K{}.boxes)))
+	// Nested mappings consume more nodes per source line than flat documents.
+	// These ratios match the proven fixed-size arenas while leaving enough room
+	// for deeply structured documents to remain on the single-arena path.
+	pairs := make([]Pair, scaledArenaCapacity(size, 3, 2))
+	values := make([]any, scaledArenaCapacity(size, 5, 8))
+	boxes := make([]scalarBox, scaledArenaCapacity(size, 16, 5))
 	lines := make([]sourceLine, size+1)
-	refs := make([]arenaReference, size)
+	refs := make([]arenaReference, min(size, 1024))
 	active := make([]string, len(valueArena10K{}.active))
 	slots := make([]mappingSlot, largeArenaSlotCapacity(size))
 	return a.use(pairs, values, boxes, lines, refs, active, slots)
 }
 
-func scaledArenaCapacity(size, capacityAt10K int) int {
-	const baseline = 10_000
-	whole := size / baseline
-	remainder := size % baseline
-	return whole*capacityAt10K + (remainder*capacityAt10K+baseline-1)/baseline
+func scaledArenaCapacity(size, numerator, denominator int) int {
+	whole := size / denominator
+	remainder := size % denominator
+	return whole*numerator + (remainder*numerator+denominator-1)/denominator
 }
 
 func largeArenaSlotCapacity(size int) int {
@@ -369,10 +388,17 @@ func (a *valueArena) setReference(name string, value any) {
 			return
 		}
 	}
-	if a.refAt < len(a.refBuf) {
-		a.refBuf[a.refAt] = arenaReference{name, value}
-		a.refAt++
+	if a.refAt == len(a.refBuf) {
+		capacity := len(a.refBuf) * 2
+		if capacity < 32 {
+			capacity = 32
+		}
+		refs := make([]arenaReference, capacity)
+		copy(refs, a.refBuf)
+		a.refBuf = refs
 	}
+	a.refBuf[a.refAt] = arenaReference{name, value}
+	a.refAt++
 }
 func (a *valueArena) reference(name string) (any, bool) {
 	for i := a.refAt - 1; i >= 0; i-- {
