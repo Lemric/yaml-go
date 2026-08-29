@@ -12,26 +12,28 @@ import (
 // documents in one independently owned heap object. Oversized inputs fall back
 // to regular growing slices without changing the public representation.
 type valueArena struct {
-	pairs     [64]Pair
-	values    [64]any
-	boxes     [96]scalarBox
-	pairBuf   []Pair
-	valueBuf  []any
-	boxBuf    []scalarBox
-	lineBuf   []sourceLine
-	refBuf    []arenaReference
-	activeBuf []string
-	slotBuf   []mappingSlot
-	pairAt    int
-	valueAt   int
-	boxAt     int
-	slotAt    int
-	lines     [64]sourceLine
-	block     blockParser
-	flow      flowParser
-	refs      [32]arenaReference
-	refAt     int
-	active    [32]string
+	pairs      [64]Pair
+	values     [64]any
+	boxes      [96]scalarBox
+	pairBuf    []Pair
+	valueBuf   []any
+	boxBuf     []scalarBox
+	lineBuf    []sourceLine
+	refBuf     []arenaReference
+	activeBuf  []string
+	slotBuf    []mappingSlot
+	pairAt     int
+	valueAt    int
+	boxAt      int
+	slotAt     int
+	byteAt     int
+	lines      [64]sourceLine
+	byteValues [16][]byte
+	block      blockParser
+	flow       flowParser
+	refs       [32]arenaReference
+	refAt      int
+	active     [32]string
 }
 
 type valueArena1K struct {
@@ -155,15 +157,14 @@ func stringHash(value string) uint64 {
 }
 
 type scalarBox struct {
-	s     string
-	i     int
-	i64   int64
-	f     float64
-	b     bool
-	t     time.Time
-	m     Mapping
-	a     []any
-	bytes []byte
+	s   string
+	i   int
+	i64 int64
+	f   float64
+	b   bool
+	t   time.Time
+	m   Mapping
+	a   []any
 }
 
 type emptyInterface struct{ typ, data unsafe.Pointer }
@@ -324,9 +325,11 @@ func (a *valueArena) sequenceValue(v []any) any {
 	return v
 }
 func (a *valueArena) bytesValue(v []byte) any {
-	if b := a.nextBox(); b != nil {
-		b.bytes = v
-		return boxed(bytesInterfaceType, unsafe.Pointer(&b.bytes))
+	if a != nil && a.byteAt < len(a.byteValues) {
+		value := &a.byteValues[a.byteAt]
+		a.byteAt++
+		*value = v
+		return boxed(bytesInterfaceType, unsafe.Pointer(value))
 	}
 	return v
 }
